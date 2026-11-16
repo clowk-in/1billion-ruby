@@ -1,0 +1,5 @@
+require "rake/testtask"
+
+Rake::TestTask.new { |task| task.pattern = "test/**/*_test.rb" }
+
+task default: :test
