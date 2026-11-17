@@ -21,7 +21,7 @@ module OneBillion
     private
 
     def client
-      @client ||= Client.new(api_key: settings.fetch(:api_key), url: settings.fetch(:url, Client::DEFAULT_URL))
+      @client ||= Client.new(api_key: settings.fetch(:api_key), url: settings.fetch(:url, Client::DEFAULT_URL), agent: "actionmailer")
     end
   end
 end

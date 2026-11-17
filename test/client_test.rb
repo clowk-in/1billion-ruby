@@ -93,6 +93,14 @@ class ClientTest < Minitest::Test
 end
 
 class DeliveryMethodTest < Minitest::Test
+  # The console shows "Rails" as the source of a mail sent by ActionMailer.
+  def test_names_actionmailer_in_the_user_agent
+    client = OneBillion::DeliveryMethod.new(api_key: "key").send(:client)
+
+    assert_match %r{\Aonebillion-ruby/\S+ actionmailer\z}, client.user_agent
+    assert_match %r{\Aonebillion-ruby/\S+\z}, OneBillion::Client.new(api_key: "key").user_agent
+  end
+
   def test_sends_the_raw_mail_to_every_envelope_recipient
     transport = FakeTransport.new([202, '{"messages":[]}'])
     delivery = OneBillion::DeliveryMethod.new(api_key: "key")

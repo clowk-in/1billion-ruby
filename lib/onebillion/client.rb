@@ -16,10 +16,13 @@ module OneBillion
     DEFAULT_URL = "https://1billion.clowk.in"
     TRIES = 3
 
-    def initialize(api_key:, url: DEFAULT_URL, timeout: 10, backoff: 0.5, transport: nil)
+    # agent: a word added to the User-Agent (the delivery method of ActionMailer adds
+    # "actionmailer"), so the console shows where a mail came from.
+    def initialize(api_key:, url: DEFAULT_URL, timeout: 10, backoff: 0.5, transport: nil, agent: nil)
       raise ArgumentError, "api_key is required" if api_key.to_s.empty?
 
       @api_key = api_key
+      @agent = agent
       @url = URI(url)
       @timeout = timeout
       @backoff = backoff
@@ -41,13 +44,15 @@ module OneBillion
 
     def validate(address) = request(:post, "/validate", { address: address })
 
+    def user_agent = ["onebillion-ruby/#{VERSION}", @agent].compact.join(" ")
+
     private
 
     def request(verb, path, body = nil, idempotency_key: nil)
       headers = {
         "Authorization" => "Bearer #{@api_key}",
         "Content-Type" => "application/json",
-        "User-Agent" => "onebillion-ruby/#{VERSION}"
+        "User-Agent" => user_agent
       }
       headers["Idempotency-Key"] = idempotency_key if idempotency_key
 
