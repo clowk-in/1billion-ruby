@@ -1,7 +1,7 @@
 require_relative "lib/onebillion/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "onebillion"
+  spec.name = "1billion"
   spec.version = OneBillion::VERSION
   spec.authors = ["Thadeu Esteves"]
   spec.summary = "Send transactional e-mail with 1billion, with an ActionMailer delivery method"

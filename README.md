@@ -1,10 +1,10 @@
-# onebillion (Ruby)
+# 1billion (Ruby)
 
 The Ruby client of [1billion](https://1billion.clowk.in): transactional e-mail on its own sending infrastructure. Use it only
 on a server: an API key must never reach a browser.
 
 ```ruby
-gem "onebillion"
+gem "1billion"
 ```
 
 ## Rails (ActionMailer)
