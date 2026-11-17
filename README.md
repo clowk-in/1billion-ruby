@@ -39,7 +39,7 @@ client.validate("jane@exemplo.com") # { "valid" => true, "checks" => [...] }
 
 - A `503` or a network error is tried again, 3 times in all, with the same `Idempotency-Key` (made for you
   when you do not pass one). No other error is tried again.
-- `OneBillion::NoCredits` (402, `error.body["buy_url"]`), `OneBillion::Refused` (422, `error.check` and
+- `OneBillion::NoCredits` (429, `error.body["retry_after"]`, `error.body["buy_url"]`), `OneBillion::Refused` (422, `error.check` and
   `error.address`), `OneBillion::Error` for the rest (`error.status`, `error.body`).
 
 The API is in [openapi.yml](https://1billion.clowk.in/openapi.yml).

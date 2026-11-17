@@ -81,7 +81,7 @@ module OneBillion
       message = body["error"] || "HTTP #{status}"
 
       case status
-      when 402 then raise NoCredits.new(message, status: status, body: body)
+      when 429 then raise NoCredits.new(message, status: status, body: body)
       when 422 then raise Refused.new(message, status: status, body: body)
       else raise Error.new(message, status: status, body: body)
       end

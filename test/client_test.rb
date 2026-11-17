@@ -70,7 +70,7 @@ class ClientTest < Minitest::Test
   end
 
   def test_no_credits
-    transport = FakeTransport.new([402, '{"error":"not enough credits","buy_url":"https://1billion.clowk.in/usage"}'])
+    transport = FakeTransport.new([429, '{"error":"not enough credits","retry_after":3600,"buy_url":"https://1billion.clowk.in/usage"}'])
 
     error = assert_raises(OneBillion::NoCredits) { client(transport).send_mail(from: "a@app.com", to: ["b@x.com"], subject: "s", text: "t") }
 
