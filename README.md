@@ -1,6 +1,6 @@
 # onebillion (Ruby)
 
-The Ruby client of [1billion](https://1billion.clowk.in): transactional e-mail with our own MTA. Use it only
+The Ruby client of [1billion](https://1billion.clowk.in): transactional e-mail on its own sending infrastructure. Use it only
 on a server: an API key must never reach a browser.
 
 ```ruby
