@@ -1,6 +1,11 @@
-<h1 align="center">
-  <a href="https://1billion.clowk.in">1billion</a>
-</h1>
+<p align="center">
+  <a href="https://1billion.clowk.in">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/clowk-in/1billion-ruby/main/.github/assets/logo-white.svg">
+      <img src="https://raw.githubusercontent.com/clowk-in/1billion-ruby/main/.github/assets/logo-color.svg" alt="1billion" height="64">
+    </picture>
+  </a>
+</p>
 
 <p align="center">
   <b>Transactional e-mail on its own sending infrastructure.</b><br>
