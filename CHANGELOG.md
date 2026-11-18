@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-18
+
 ### Added
 
 - `OneBillion.api_key` and `OneBillion.url`, from `ENV["ONEBILLION_API_KEY"]` and `ENV["ONEBILLION_URL"]` by default.
@@ -28,5 +30,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A retry of a `503` and of a network error, 3 tries in all, with the same `Idempotency-Key`.
 - `OneBillion::NoCredits` (429), `OneBillion::Refused` (422, `check` and `address`) and `OneBillion::Error`.
 
-[Unreleased]: https://github.com/clowk-in/1billion-ruby/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/clowk-in/1billion-ruby/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/clowk-in/1billion-ruby/compare/v0.1.0...v0.3.0
 [0.1.0]: https://github.com/clowk-in/1billion-ruby/releases/tag/v0.1.0
