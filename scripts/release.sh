@@ -3,9 +3,11 @@
 # CHANGELOG.md, makes the commit "release: X.Y.Z" and the tag vX.Y.Z, then
 # asks before it pushes.
 #
-#   scripts/release.sh patch|minor|major [--dry-run] [--yes]
+#   scripts/release.sh patch|minor|major|X.Y.Z [--dry-run] [--yes]
 #
-# The Makefile calls it: make tag patch, make tag minor, make tag major.
+# The Makefile calls it: make tag patch, make tag minor, make tag major, or
+# make tag 0.3.0 for an exact version (to bring the 3 SDKs to one version).
+# An exact version must be higher than the latest tag.
 # --yes (make tag patch YES=1) pushes without asking, for scripts and agents.
 # tag.yml calls it too, for a commit "tag(patch): ..." on main.
 #
@@ -32,8 +34,11 @@ done
 
 case "$bump" in
   patch | minor | major) ;;
+  [0-9]*.[0-9]*.[0-9]* | v[0-9]*.[0-9]*.[0-9]*)
+    bump="${bump#v}"
+    ;;
   *)
-    echo "usage: make tag patch|minor|major" >&2
+    echo "usage: make tag patch|minor|major|X.Y.Z" >&2
     exit 2
     ;;
 esac
@@ -98,6 +103,19 @@ case "$bump" in
 esac
 
 next="$major.$minor.$patch"
+
+# An exact version replaces the bump, and must be higher than the latest tag.
+case "$bump" in
+  patch | minor | major) ;;
+  *)
+    next="$bump"
+
+    if [ "$(printf '%s\n%s\n' "$current" "$next" | sort -V | tail -n 1)" != "$next" ] || [ "$current" = "$next" ]; then
+      fail "$next is not higher than $last."
+    fi
+    ;;
+esac
+
 today="$(date -u +%Y-%m-%d)"
 
 echo "release: $last -> v$next ($bump)"
