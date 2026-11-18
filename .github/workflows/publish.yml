@@ -58,14 +58,21 @@ jobs:
         run: gem build 1billion.gemspec
 
       # Trusted publishing: the OIDC token of this job becomes a push key of
-      # 15 minutes. A new gem must name its owner (the rubygems.org account
-      # 103733) in the exchange, and rubygems/configure-rubygems-credentials
-      # has no input for it yet, so this step does the same exchange itself.
+      # 15 minutes. A new gem must name its owner (the id of the rubygems.org
+      # account, in the secret RUBYGEMS_OWNER) in the exchange, and
+      # rubygems/configure-rubygems-credentials has no input for it yet, so
+      # this step does the same exchange itself.
       - name: Get a push key (trusted publishing)
         if: ${{ env.GEM_HOST_API_KEY == '' }}
         env:
-          RUBYGEMS_OWNER: "103733"
+          RUBYGEMS_OWNER: ${{ secrets.RUBYGEMS_OWNER }}
         run: |
+          if [ -z "$RUBYGEMS_OWNER" ]; then
+            echo "set the secret RUBYGEMS_OWNER (the id of the rubygems.org account that owns the gem)"
+
+            exit 1
+          fi
+
           jwt="$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=rubygems.org" | jq -r .value)"
 
           body="$(jq -n --arg jwt "$jwt" --arg owner "$RUBYGEMS_OWNER" '{jwt: $jwt, owner: $owner}')"

@@ -61,8 +61,9 @@ The maintainers release from `main`:
   passes on `main`, `tag.yml` runs the same script.
 
 When CI passes on the release commit, `release.yml` makes the GitHub release with the notes of
-`CHANGELOG.md`, and `publish.yml` pushes the gem to rubygems.org (with the secret `GEM_HOST_API_KEY`, or with
-trusted publishing when the secret is not set).
+`CHANGELOG.md`, and `publish.yml` pushes the gem to rubygems.org. It uses the secret `GEM_HOST_API_KEY` when it
+is set. Without it, it uses trusted publishing, and the secret `RUBYGEMS_OWNER` (the id of the rubygems.org
+account that owns the gem) must be set.
 
 ## License
 
