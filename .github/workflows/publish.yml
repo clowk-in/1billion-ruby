@@ -1,0 +1,70 @@
+name: publish
+
+# The gem 1billion of a release, on rubygems.org. There are no tests here:
+# CI calls this workflow only after its tests passed on the release commit.
+#
+# It pushes with the secret GEM_HOST_API_KEY when the repo has it, and with
+# trusted publishing (OIDC) when it does not.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+
+  # Run by hand: the tag must exist.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag (vX.Y.Z)
+        type: string
+        required: true
+
+env:
+  TAG: ${{ inputs.tag }}
+
+permissions:
+  contents: read
+  id-token: write
+
+# One release at a time, never cancelled halfway (a gem version can be
+# pushed only once).
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  gem:
+    name: gem (1billion)
+    runs-on: ubuntu-latest
+
+    env:
+      GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+
+      - name: Check the version matches the tag
+        run: test "v$(ruby -Ilib -ronebillion/version -e 'puts OneBillion::VERSION')" = "$TAG"
+
+      - name: Build
+        run: gem build 1billion.gemspec
+
+      - name: Configure RubyGems credentials (trusted publishing)
+        if: ${{ env.GEM_HOST_API_KEY == '' }}
+        uses: rubygems/configure-rubygems-credentials@v2.1.0
+        with:
+          trusted-publisher: true
+
+      # A version that is already on rubygems.org is skipped, so a re-run
+      # finishes a release that stopped halfway.
+      - name: Push
+        shell: bash
+        run: gem push 1billion-*.gem 2>&1 | tee push.log || grep -q "Repushing of gem versions is not allowed" push.log

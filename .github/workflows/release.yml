@@ -1,0 +1,56 @@
+name: release
+
+# The GitHub release of a tag, with the notes of its version in
+# CHANGELOG.md. The gem goes to rubygems.org in publish.yml. There are no
+# tests here: CI calls this workflow only after its tests passed on the
+# release commit.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+
+  # Run by hand: the tag must exist.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag (vX.Y.Z)
+        type: string
+        required: true
+
+env:
+  TAG: ${{ inputs.tag }}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: GitHub release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Notes from CHANGELOG.md
+        run: awk -v ver="${TAG#v}" '$0 ~ "^## \\[" ver "\\]" { on = 1; next } /^## \[/ { on = 0 } on' CHANGELOG.md > notes.md
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already has a release: skipped"
+
+            exit 0
+          fi
+
+          gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag

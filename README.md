@@ -1,11 +1,48 @@
-# 1billion (Ruby)
+<h1 align="center">
+  <a href="https://1billion.clowk.in">1billion</a>
+</h1>
 
-The Ruby client of [1billion](https://1billion.clowk.in): transactional e-mail on its own sending infrastructure. Use it only
-on a server: an API key must never reach a browser.
+<p align="center">
+  <b>Transactional e-mail on its own sending infrastructure.</b><br>
+  The official Ruby SDK.
+</p>
 
-```ruby
-gem "1billion"
+<p align="center">
+  <a href="https://1billion.clowk.in"><b>Website</b></a> ·
+  <a href="https://1billion.clowk.in"><b>Get an API key</b></a> ·
+  <a href="https://1billion.clowk.in/openapi.yml"><b>API reference</b></a> ·
+  <a href="CHANGELOG.md"><b>Changelog</b></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/clowk-in/1billion-ruby/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/clowk-in/1billion-ruby/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://rubygems.org/gems/1billion"><img alt="Gem Version" src="https://img.shields.io/gem/v/1billion.svg"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+</p>
+
+The official Ruby client of [1billion](https://1billion.clowk.in): transactional e-mail on its own sending
+infrastructure. Send a login code, a receipt or a reset link from Rails or from plain Ruby, and read what
+happened to each recipient.
+
+- **Rails with one line.** An ActionMailer delivery method: your mailers do not change.
+- **No dependencies.** Only the Ruby standard library (`net/http`, `json`).
+- **Safe retries.** A `503` or a network error is tried again with the same `Idempotency-Key`, so a retry never
+  sends a mail twice.
+- **Clear errors.** `OneBillion::NoCredits` and `OneBillion::Refused` tell you what to do next.
+- **Address validation.** A verdict, a score and the signals of an address, before you send to it.
+
+> Use it only on a server. An API key must never reach a browser.
+
+## Install
+
+```bash
+bundle add 1billion
 ```
+
+Ruby 3.1 or newer. The gem is named `1billion`; its code is under `OneBillion`, because a Ruby constant can
+not start with a digit.
+
+Make an API key in the [console](https://1billion.clowk.in), and verify the domain that you send from.
 
 ## Rails (ActionMailer)
 
@@ -15,50 +52,154 @@ config.action_mailer.delivery_method = :onebillion
 config.action_mailer.onebillion_settings = { api_key: ENV["ONEBILLION_KEY"] }
 ```
 
-Your mailers do not change. The gem sends the finished message to every recipient (to, cc and bcc), and the
-Message-ID is the Idempotency-Key: a retried job never sends the mail twice. Send with `deliver_later`.
+That is all. Your mailers and views do not change:
+
+```ruby
+class UserMailer < ApplicationMailer
+  def login_code(user, code)
+    @code = code
+
+    mail(to: user.email, subject: "Your code")
+  end
+end
+
+UserMailer.login_code(user, "482913").deliver_later
+```
+
+The gem sends the finished MIME message to every recipient (`to`, `cc` and `bcc`), and the `Message-ID` is
+the `Idempotency-Key`: the same message sent twice goes out once. Send with `deliver_later`, so a slow
+network never holds a web request.
+
+| Setting | Default | What |
+|---|---|---|
+| `api_key` | (required) | the API key of the app |
+| `url` | `https://1billion.clowk.in` | another console, for example a dev stack |
 
 ## The client
 
 ```ruby
 client = OneBillion::Client.new(api_key: ENV["ONEBILLION_KEY"])
 
-client.send_mail(
-  from: "App <hi@seu-dominio.com>",
-  to: ["jane@exemplo.com"],
-  subject: "Seu código",
-  text: "Seu código é 482 913",
+answer = client.send_mail(
+  from: "Acme <hi@acme.com>",
+  to: ["jane@example.com"],
+  subject: "Your code",
+  text: "Your code is 482 913",
+  html: "<p>Your code is <b>482 913</b></p>",
   priority: "high",
   idempotency_key: "login-jane-482913"
 )
 
-client.message("9f2c…")             # the state of one recipient
-client.unsuppress("jane@exemplo.com")
-client.validate("jane@exemplo.com") # { "valid" => true, "checks" => [...] }
+answer["messages"] # => [{ "id" => "9f2c…", "to" => "jane@example.com", "status" => "accepted" }]
 ```
 
-- A `503` or a network error is tried again, 3 times in all, with the same `Idempotency-Key` (made for you
-  when you do not pass one). No other error is tried again.
-- `OneBillion::NoCredits` (429, `error.body["retry_after"]`, `error.body["buy_url"]`), `OneBillion::Refused` (422, `error.check` and
-  `error.address`), `OneBillion::Error` for the rest (`error.status`, `error.body`).
+`send_mail` returns when 1billion has the mail (`202`, status `accepted`). The delivery runs after that, with
+its own retries.
 
-The API is in [openapi.yml](https://1billion.clowk.in/openapi.yml).
+| Argument | What |
+|---|---|
+| `from` | a sender on a verified domain of the app, with a name or without one |
+| `to`, `cc`, `bcc` | the recipients |
+| `reply_to` | the reply address |
+| `text`, `html` | the body: one of them or both |
+| `attachments` | `[{ filename:, content_type:, content: }]`, with `content` in base64 |
+| `priority` | `"normal"` (the default) or `"high"`: mail that a person waits for goes first |
+| `raw` | a finished MIME message, in place of the fields above |
+| `idempotency_key` | the same key in 30 days returns the first answer and sends nothing again |
 
-## Tests
+When you do not pass an `idempotency_key`, the client makes one and uses it for its own retries.
 
-```bash
-bundle exec rake
-ONEBILLION_URL=http://localhost:3100 ONEBILLION_KEY=dev-token ONEBILLION_FROM="Dev <hi@dev.test>" bundle exec rake
+### Read a message
+
+```ruby
+client.message("9f2c…")
+# => { "id" => "9f2c…", "status" => "sent", "attempts" => 1, "last_error" => nil, ... }
 ```
 
-The second line runs the integration test against the dev stack of 1billion (`make up`: the console on `:3100`,
-API key `dev-token`, domain `dev.test`).
+`status` is `accepted`, `queued`, `sending`, `sent`, `bounced` or `suppressed`. `sent` means that the mail
+server of the recipient accepted the message. Messages stay for 30 days.
 
-## Release
+### Validate an address
 
-Bump `OneBillion::VERSION` in `lib/onebillion/version.rb` first, then:
-
-```bash
-gem build 1billion.gemspec && gem push 1billion-<version>.gem
-git tag vX.Y.Z && git push origin main vX.Y.Z
+```ruby
+client.validate("jane@gmial.com")
+# => { "result" => "risky", "reason" => "possible_typo", "score" => 0.3,
+#      "did_you_mean" => "jane@gmail.com", "disposable" => false, "role" => false, ... }
 ```
+
+`result` is `deliverable`, `risky` or `undeliverable`. A validation sends nothing and costs 100 credits.
+
+### Suppressions
+
+A hard bounce or a complaint puts the address on the suppression list of the app, and 1billion stops sending
+to it. When the address works again:
+
+```ruby
+client.unsuppress("jane@example.com")
+```
+
+## Errors
+
+```ruby
+begin
+  client.send_mail(**mail)
+rescue OneBillion::NoCredits => error
+  # 429: no credits for these recipients today. They come back at 00:00 in the time
+  # zone of the workspace (error.body["retry_after"] seconds), or buy a pack
+  # (error.body["buy_url"]).
+rescue OneBillion::Refused => error
+  # 422: a bad message, a domain that is not verified, or a recipient that failed a
+  # check (error.check, error.address).
+rescue OneBillion::Error => error
+  # Any other answer: error.status and error.body. status is nil for a network error.
+end
+```
+
+| Status | Error | What |
+|---|---|---|
+| `401` | `OneBillion::Error` | a bad API key |
+| `403` | `OneBillion::Error` | the sends of the workspace are paused (low reputation); a person reviews it |
+| `422` | `OneBillion::Refused` | fix the message or the recipient |
+| `429` | `OneBillion::NoCredits` | no credits today |
+| `503` | — | tried again by the client |
+
+Only a `503` and a network error are tried again: 3 tries in all, with a wait that doubles (0.5 s, then 1 s).
+No other error is tried again, because a second try gives the same answer.
+
+## Options
+
+```ruby
+OneBillion::Client.new(
+  api_key: ENV["ONEBILLION_KEY"],
+  url: "http://localhost:3100", # https://1billion.clowk.in by default
+  timeout: 5,                   # seconds, 10 by default
+  backoff: 1                    # the first wait between tries, 0.5 s by default
+)
+```
+
+Each request has the `User-Agent` `onebillion-ruby/<version>` (with `actionmailer` from the delivery
+method), so the console shows which mails came from the SDK.
+
+## Start sending
+
+1. Make a free account on **[1billion.clowk.in](https://1billion.clowk.in)**: 100 mails a day for free, every day, and your first domain for free.
+2. Add your domain. The console gives you the DNS records, and checks them for you.
+3. Make an API key, then `bundle add 1billion`.
+
+Your first mail goes out in a few minutes. A question about the SDK? [Open an issue](https://github.com/clowk-in/1billion-ruby/issues).
+
+## Docs
+
+- API reference: [openapi.yml](https://1billion.clowk.in/openapi.yml)
+- Changes: [CHANGELOG.md](CHANGELOG.md)
+- Other SDKs: [Go](https://github.com/clowk-in/1billion-go) and
+  [JavaScript](https://github.com/clowk-in/1billion-js) (Node.js, Next.js, Bun)
+
+## Contributing
+
+Bug reports and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. For a security
+problem, see [SECURITY.md](SECURITY.md). This project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+
+[MIT](LICENSE)
