@@ -11,5 +11,6 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir["lib/**/*.rb", "README.md", "LICENSE"]
   spec.require_paths = ["lib"]
+  spec.metadata["source_code_uri"] = "https://github.com/clowk-in/1billion-ruby"
   spec.metadata["rubygems_mfa_required"] = "true"
 end

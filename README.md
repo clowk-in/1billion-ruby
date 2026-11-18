@@ -50,3 +50,15 @@ The API is in [openapi.yml](https://1billion.clowk.in/openapi.yml).
 bundle exec rake
 ONEBILLION_URL=http://localhost:3100 ONEBILLION_KEY=dev-token ONEBILLION_FROM="Dev <hi@dev.test>" bundle exec rake
 ```
+
+The second line runs the integration test against the dev stack of 1billion (`make up`: the console on `:3100`,
+API key `dev-token`, domain `dev.test`).
+
+## Release
+
+Bump `OneBillion::VERSION` in `lib/onebillion/version.rb` first, then:
+
+```bash
+gem build 1billion.gemspec && gem push 1billion-<version>.gem
+git tag vX.Y.Z && git push origin main vX.Y.Z
+```
