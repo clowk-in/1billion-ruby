@@ -151,6 +151,8 @@ done
 
 git --no-pager diff --stat
 
+# VERSION_FILES is a list of paths: split it on purpose.
+# shellcheck disable=SC2086
 git add CHANGELOG.md $VERSION_FILES
 git commit --quiet -m "release: $next"
 git tag "v$next"
