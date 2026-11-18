@@ -57,11 +57,31 @@ jobs:
       - name: Build
         run: gem build 1billion.gemspec
 
-      - name: Configure RubyGems credentials (trusted publishing)
+      # Trusted publishing: the OIDC token of this job becomes a push key of
+      # 15 minutes. A new gem must name its owner (the rubygems.org account
+      # 103733) in the exchange, and rubygems/configure-rubygems-credentials
+      # has no input for it yet, so this step does the same exchange itself.
+      - name: Get a push key (trusted publishing)
         if: ${{ env.GEM_HOST_API_KEY == '' }}
-        uses: rubygems/configure-rubygems-credentials@v2.1.0
-        with:
-          trusted-publisher: true
+        env:
+          RUBYGEMS_OWNER: "103733"
+        run: |
+          jwt="$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=rubygems.org" | jq -r .value)"
+
+          body="$(jq -n --arg jwt "$jwt" --arg owner "$RUBYGEMS_OWNER" '{jwt: $jwt, owner: $owner}')"
+
+          answer="$(curl -sS -w '\n%{http_code}' -X POST https://rubygems.org/api/v1/oidc/trusted_publisher/exchange_token -H "Content-Type: application/json" -d "$body")"
+          status="$(echo "$answer" | tail -n 1)"
+          key="$(echo "$answer" | sed '$d' | jq -r '.rubygems_api_key // empty')"
+
+          if [ "$status" != "201" ] || [ -z "$key" ]; then
+            echo "the exchange failed with $status: $(echo "$answer" | sed '$d' | jq -c '.errors // .' 2>/dev/null)"
+
+            exit 1
+          fi
+
+          echo "::add-mask::$key"
+          echo "GEM_HOST_API_KEY=$key" >> "$GITHUB_ENV"
 
       # A version that is already on rubygems.org is skipped, so a re-run
       # finishes a release that stopped halfway.
