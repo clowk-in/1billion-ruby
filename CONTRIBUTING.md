@@ -25,7 +25,7 @@ The unit tests use a fake transport: no network and no API key. The integration 
 `ONEBILLION_URL` is set:
 
 ```bash
-ONEBILLION_URL=https://1billion.clowk.in ONEBILLION_KEY=<a test key> ONEBILLION_FROM="Test <hi@your-domain.com>" bundle exec rake
+ONEBILLION_URL=https://1billion.clowk.in ONEBILLION_API_KEY=<a test key> ONEBILLION_FROM="Test <hi@your-domain.com>" bundle exec rake
 ```
 
 ## Rules

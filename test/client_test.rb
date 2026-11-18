@@ -128,12 +128,12 @@ class DeliveryMethodTest < Minitest::Test
 end
 
 # Against a real console (the dev stack: ONEBILLION_URL=http://localhost:3100
-# ONEBILLION_KEY=dev-token ONEBILLION_FROM="Dev <hi@dev.test>").
+# ONEBILLION_API_KEY=dev-token ONEBILLION_FROM="Dev <hi@dev.test>").
 class IntegrationTest < Minitest::Test
   def test_sends_and_reads_a_mail
     skip "set ONEBILLION_URL to run" unless ENV["ONEBILLION_URL"]
 
-    api = OneBillion::Client.new(api_key: ENV.fetch("ONEBILLION_KEY"), url: ENV.fetch("ONEBILLION_URL"))
+    api = OneBillion::Client.new(api_key: ENV.fetch("ONEBILLION_API_KEY"), url: ENV.fetch("ONEBILLION_URL"))
     sent = api.send_mail(from: ENV.fetch("ONEBILLION_FROM"), to: ["sdk-ruby@gmail.com"], subject: "SDK Ruby", text: "Olá")
     id = sent["messages"].first["id"]
 

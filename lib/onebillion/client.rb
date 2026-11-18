@@ -7,7 +7,7 @@ module OneBillion
   # The client of the 1billion API. Use it only on a server: an API key must never reach a
   # browser.
   #
-  #   client = OneBillion::Client.new(api_key: ENV["ONEBILLION_KEY"])
+  #   client = OneBillion::Client.new # the key of ENV["ONEBILLION_API_KEY"]
   #   client.send_mail(from: "App <hi@app.com>", to: ["ana@example.com"], subject: "Oi", text: "Olá")
   #
   # A 503 or a network error is tried again (3 times in all) with the same Idempotency-Key, so
@@ -18,8 +18,8 @@ module OneBillion
 
     # agent: a word added to the User-Agent (the delivery method of ActionMailer adds
     # "actionmailer"), so the console shows where a mail came from.
-    def initialize(api_key:, url: DEFAULT_URL, timeout: 10, backoff: 0.5, transport: nil, agent: nil)
-      raise ArgumentError, "api_key is required" if api_key.to_s.empty?
+    def initialize(api_key: OneBillion.api_key, url: OneBillion.url, timeout: 10, backoff: 0.5, transport: nil, agent: nil)
+      raise ArgumentError, "no API key: set ONEBILLION_API_KEY or pass api_key:" if api_key.to_s.empty?
 
       @api_key = api_key
       @agent = agent

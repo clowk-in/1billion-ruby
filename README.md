@@ -42,17 +42,21 @@ bundle add 1billion
 Ruby 3.1 or newer. The gem is named `1billion`; its code is under `OneBillion`, because a Ruby constant can
 not start with a digit.
 
-Make an API key in the [console](https://1billion.clowk.in), and verify the domain that you send from.
+Make an API key in the [console](https://1billion.clowk.in), and verify the domain that you send from. Put the
+key in the environment:
+
+```bash
+export ONEBILLION_API_KEY=<your API key>
+```
 
 ## Rails (ActionMailer)
 
 ```ruby
 # config/environments/production.rb
 config.action_mailer.delivery_method = :onebillion
-config.action_mailer.onebillion_settings = { api_key: ENV["ONEBILLION_KEY"] }
 ```
 
-That is all. Your mailers and views do not change:
+That is all. The key comes from `ONEBILLION_API_KEY`. Your mailers and views do not change:
 
 ```ruby
 class UserMailer < ApplicationMailer
@@ -70,15 +74,73 @@ The gem sends the finished MIME message to every recipient (`to`, `cc` and `bcc`
 the `Idempotency-Key`: the same message sent twice goes out once. Send with `deliver_later`, so a slow
 network never holds a web request.
 
+To set the key in code, use `onebillion_settings`. The settings win over the environment:
+
+```ruby
+config.action_mailer.onebillion_settings = { api_key: Rails.application.credentials.onebillion_api_key }
+```
+
 | Setting | Default | What |
 |---|---|---|
-| `api_key` | (required) | the API key of the app |
-| `url` | `https://1billion.clowk.in` | another console, for example a dev stack |
+| `api_key` | `ENV["ONEBILLION_API_KEY"]` | the API key of the app |
+| `url` | `ENV["ONEBILLION_URL"]`, else `https://1billion.clowk.in` | another console, for example a dev stack |
+
+## Send a mail (the same call as Resend)
+
+```ruby
+answer = OneBillion::Emails.send(
+  {
+    from: "Acme <hi@acme.com>",
+    to: "jane@example.com",
+    subject: "Your code",
+    html: "<p>Your code is <b>482 913</b></p>"
+  },
+  { idempotency_key: "login-jane-482913" }
+)
+
+answer["id"] # => "9f2c…", the id of the first message
+```
+
+This is the call of `Resend::Emails.send`: a move from Resend changes only the constant. The keys are
+`from`, `to`, `cc`, `bcc`, `reply_to`, `subject`, `html`, `text`, `attachments` and `priority`, as symbols or
+strings. The answer has `"id"` and `"messages"` (one per recipient).
+
+A key that 1billion does not support (for example `tags`, `headers` or `scheduled_at`) raises an
+`ArgumentError` that names it. The SDK never drops a key and sends the mail without it.
+
+The key comes from `ONEBILLION_API_KEY`. To set it in code, use `OneBillion.api_key = "..."` (and
+`OneBillion.url` for another console).
+
+## Verify a webhook
+
+```ruby
+class WebhooksController < ApplicationController
+  skip_forgery_protection
+
+  def create
+    event = OneBillion::Signature.verify(payload: request.raw_post, headers: request.headers)
+
+    case event["type"]
+    when "bounced" then User.find_by(email: event["to"])&.update(email_bounced: true)
+    end
+
+    head :ok
+  rescue OneBillion::Signature::Invalid
+    head :unauthorized
+  end
+end
+```
+
+`verify` checks `1B-Signature` against the raw body and `1B-Timestamp`, and returns the event as a Hash
+(`id`, `type`, `message_id`, `to`, `detail`, `created_at`). The secret comes from
+`ONEBILLION_WEBHOOK_SECRET`; pass `secret:` to set it in code. A bad or missing signature, or a timestamp older
+than 5 minutes (`tolerance: 300`), raises `OneBillion::Signature::Invalid`. `headers` is a Hash (names in any
+case) or Rails `request.headers`.
 
 ## The client
 
 ```ruby
-client = OneBillion::Client.new(api_key: ENV["ONEBILLION_KEY"])
+client = OneBillion::Client.new # the key of ONEBILLION_API_KEY
 
 answer = client.send_mail(
   from: "Acme <hi@acme.com>",
@@ -170,8 +232,8 @@ No other error is tried again, because a second try gives the same answer.
 
 ```ruby
 OneBillion::Client.new(
-  api_key: ENV["ONEBILLION_KEY"],
-  url: "http://localhost:3100", # https://1billion.clowk.in by default
+  api_key: "...",               # ENV["ONEBILLION_API_KEY"] by default
+  url: "http://localhost:3100", # ENV["ONEBILLION_URL"], else https://1billion.clowk.in
   timeout: 5,                   # seconds, 10 by default
   backoff: 1                    # the first wait between tries, 0.5 s by default
 )

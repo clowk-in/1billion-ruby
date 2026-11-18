@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `OneBillion.api_key` and `OneBillion.url`, from `ENV["ONEBILLION_API_KEY"]` and `ENV["ONEBILLION_URL"]` by default.
+- `OneBillion::Emails.send(params, options)`: the same call as `Resend::Emails.send`. It returns `"id"` and `"messages"`. A key that 1billion does not support raises an `ArgumentError`.
+- `OneBillion::Signature.verify(payload:, headers:)`: checks the signature of a webhook and returns the event. It raises `OneBillion::Signature::Invalid`.
+
+### Changed
+
+- The delivery method `:onebillion` needs no settings: the whole Rails setup is `config.action_mailer.delivery_method = :onebillion`. `onebillion_settings` still wins.
+- `OneBillion::Client.new` takes the key from `ONEBILLION_API_KEY` when you do not pass `api_key:`.
+- The env var of the docs and of the integration test is `ONEBILLION_API_KEY` (it was `ONEBILLION_KEY`).
+
 ## [0.1.0] - 2026-11-18
 
 ### Added

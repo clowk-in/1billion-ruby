@@ -12,6 +12,9 @@ dependencies. The API it follows is [openapi.yml](https://1billion.clowk.in/open
 |---|---|
 | `lib/1billion.rb` | the file that Bundler requires by the gem name; it requires `onebillion` |
 | `lib/onebillion/client.rb` | `OneBillion::Client`: `send_mail`, `message`, `unsuppress`, `validate` |
+| `lib/onebillion.rb` | `OneBillion.api_key`, `OneBillion.url` (from ENV) and `OneBillion.client` |
+| `lib/onebillion/emails.rb` | `OneBillion::Emails.send`: the call of `Resend::Emails.send` |
+| `lib/onebillion/signature.rb` | `OneBillion::Signature.verify`: the webhook signature |
 | `lib/onebillion/delivery_method.rb` | the ActionMailer delivery method `:onebillion` |
 | `lib/onebillion/errors.rb` | `Error`, `NoCredits` (429), `Refused` (422) |
 | `lib/onebillion/version.rb` | `OneBillion::VERSION`, changed only by `make tag` |
@@ -28,7 +31,7 @@ make test    # bundle exec rake
 make build   # gem build, to check the gemspec
 ```
 
-The integration test runs only with `ONEBILLION_URL`, `ONEBILLION_KEY` and `ONEBILLION_FROM`.
+The integration test runs only with `ONEBILLION_URL`, `ONEBILLION_API_KEY` and `ONEBILLION_FROM`.
 
 ## Rules
 
