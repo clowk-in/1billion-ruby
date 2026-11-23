@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- The event of a received mail: `OneBillion::Signature::MAIL_RECEIVED` (`"mail.received"`). Its `"data"` is the
+  whole mail (`from`, `subject`, `text`, `html`, `attachments`, `auth` and more). The other events have no
+  `"data"`.
+
 ## [0.3.0] - 2026-11-18
 
 ### Added
