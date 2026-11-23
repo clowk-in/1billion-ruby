@@ -174,6 +174,30 @@ class SignatureTest < Minitest::Test
     assert_equal "m1", event["message_id"]
   end
 
+  # A mail.received event has the received mail in "data"; the other events have none.
+  def test_returns_a_received_mail
+    payload = JSON.generate(
+      "id" => "e2", "type" => "mail.received", "message_id" => "", "to" => "feedback@example.com", "detail" => "",
+      "created_at" => "2026-11-19T12:00:01Z",
+      "data" => {
+        "id" => "r1", "from" => "Ana <ana@example.org>", "to" => "feedback@example.com", "mail_from" => "ana@example.org",
+        "subject" => "Oi", "message_id" => "<a@example.org>", "text" => "Oi, tudo bem?", "html" => nil,
+        "attachments" => [{ "filename" => "nota.pdf", "content_type" => "application/pdf", "size" => 48_213 }],
+        "auth" => { "spf" => "pass", "dkim" => "pass", "dmarc" => "pass" }, "size" => 52_011,
+        "received_at" => "2026-11-19T12:00:00.000Z"
+      }
+    )
+
+    event = OneBillion::Signature.verify(payload: payload, headers: headers(payload: payload), secret: SECRET)
+    mail = event["data"]
+
+    assert_equal OneBillion::Signature::MAIL_RECEIVED, event["type"]
+    assert_equal ["Oi", "Oi, tudo bem?", nil], mail.values_at("subject", "text", "html")
+    assert_equal "nota.pdf", mail["attachments"].first["filename"]
+    assert_equal "pass", mail["auth"]["dmarc"]
+    assert_nil OneBillion::Signature.verify(payload: PAYLOAD, headers: headers, secret: SECRET)["data"]
+  end
+
   def test_header_names_are_case_insensitive
     lower = headers.transform_keys(&:downcase)
 

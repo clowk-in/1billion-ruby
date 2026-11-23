@@ -154,6 +154,27 @@ end
 than 5 minutes (`tolerance: 300`), raises `OneBillion::Signature::Invalid`. `headers` is a Hash (names in any
 case) or Rails `request.headers`.
 
+### A received mail
+
+A mail to an address whose route is "webhook" (Recebimento, in the console) comes as the event
+`mail.received` (`OneBillion::Signature::MAIL_RECEIVED`). Its `"data"` is the whole mail. 1billion keeps no
+content, so this is the only time your app gets it.
+
+```ruby
+if event["type"] == OneBillion::Signature::MAIL_RECEIVED
+  mail = event["data"]
+
+  Feedback.create!(from: mail["mail_from"], subject: mail["subject"], body: mail["text"])
+
+  mail["attachments"].each { |file| Rails.logger.info([file["filename"], file["content_type"], file["size"]]) }
+end
+```
+
+`"data"` has `id`, `from`, `to`, `mail_from`, `subject`, `message_id`, `text`, `html`, `attachments` (the name,
+type and size of each file, never its content), `auth` (`spf`, `dkim` and `dmarc` as our mx saw them), `size`
+and `received_at`. `text` and `html` are whole, never cut, and are `nil` when the mail has none. The other events
+have no `"data"`.
+
 ## Read a message, validate an address, suppressions
 
 `OneBillion.client` is a client with the key of `ONEBILLION_API_KEY`, ready to use.
