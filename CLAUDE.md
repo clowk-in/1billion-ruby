@@ -49,6 +49,10 @@ The integration test runs only with `ONEBILLION_URL`, `ONEBILLION_API_KEY` and `
 
 ## Release
 
+- **Bump with a tag commit, always:** a commit on `main` whose subject is `tag(patch|minor|major): ...`.
+  When CI passes, `tag.yml` runs `scripts/release.sh`, which makes the commit `release: X.Y.Z` and the tag.
+  Do not run `make tag` from an agent session: the session can not push the tag (403), and a release commit
+  without its tag leaves the version and `CHANGELOG.md` out of step. Bump only when the maintainer asks.
 - `make tag patch|minor|major` (`scripts/release.sh`) bumps `OneBillion::VERSION`, closes the `Unreleased`
   section of `CHANGELOG.md`, commits `release: X.Y.Z`, tags `vX.Y.Z` and asks before the push. `YES=1` pushes
   without asking. `make tag X.Y.Z` sets an exact version (higher than the latest tag), to keep the 3 SDKs on one version. `make -n tag minor` is a dry run.
